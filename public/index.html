@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROS2 Web Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+        }
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .log-container {
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .log-entry {
+            padding: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            color: white;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-7xl mx-auto">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-5xl font-bold text-white mb-4">ROS2 Web Dashboard</h1>
+            <div class="flex items-center justify-center gap-3">
+                <div id="connectionStatus" class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-gray-500"></div>
+                    <span class="text-lg">Initializing...</span>
+                </div>
+                <span class="text-gray-400">|</span>
+                <span id="messageCount" class="text-gray-400">0 messages</span>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="glass-card p-6 mb-6">
+            <h2 class="text-2xl font-bold mb-4">Launch Control</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Package Name</label>
+                    <input type="text" id="packageName" value="my_robot_controller" 
+                           class="w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Launch File</label>
+                    <input type="text" id="launchFile" value="all_nodes_launch.py" 
+                           class="w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 text-white">
+                </div>
+            </div>
+            <div class="flex gap-3 mt-4">
+                <button onclick="launchROS2()" class="btn btn-success">Launch ROS2</button>
+                <button onclick="stopROS2()" class="btn btn-danger">Stop All</button>
+                <button onclick="refreshStatus()" class="btn btn-primary">Refresh Status</button>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="glass-card p-6">
+                <h3 class="text-sm font-semibold text-gray-300 mb-2">ROS2 Status</h3>
+                <div class="text-2xl font-bold" id="ros2Status">Stopped</div>
+            </div>
+            <div class="glass-card p-6">
+                <h3 class="text-sm font-semibold text-gray-300 mb-2">Active Nodes</h3>
+                <div class="text-2xl font-bold text-blue-400" id="nodeCount">0</div>
+            </div>
+            <div class="glass-card p-6">
+                <h3 class="text-sm font-semibold text-gray-300 mb-2">Active Topics</h3>
+                <div class="text-2xl font-bold text-green-400" id="topicCount">0</div>
+            </div>
+            <div class="glass-card p-6">
+                <h3 class="text-sm font-semibold text-gray-300 mb-2">Messages</h3>
+                <div class="text-2xl font-bold text-purple-400" id="messageCountLarge">0</div>
+            </div>
+        </div>
+
+        <!-- Latest Message -->
+        <div class="glass-card p-6 mb-6">
+            <h2 class="text-2xl font-bold mb-4">Latest Message</h2>
+            <div class="bg-black/30 p-4 rounded-lg">
+                <div class="text-sm text-gray-400 mb-2">
+                    Node: <span id="latestNode" class="text-blue-400">-</span> | 
+                    Time: <span id="latestTime" class="text-green-400">-</span>
+                </div>
+                <div id="latestMessage" class="text-lg font-mono text-white">
+                    Waiting for data...
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time Log Stream -->
+        <div class="glass-card p-6 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Message Stream</h2>
+                <button onclick="clearLogs()" class="btn btn-danger text-sm py-1">Clear</button>
+            </div>
+            <div id="logStream" class="log-container bg-black/30 rounded-lg p-4">
+                <div class="text-gray-400 text-center py-4">Waiting for messages...</div>
+            </div>
+        </div>
+
+        <!-- Active Nodes & Topics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="glass-card p-6">
+                <h2 class="text-2xl font-bold mb-4">Active Nodes</h2>
+                <div id="nodesList" class="space-y-2">
+                    <div class="text-gray-400">No nodes detected</div>
+                </div>
+            </div>
+            <div class="glass-card p-6">
+                <h2 class="text-2xl font-bold mb-4">Active Topics</h2>
+                <div id="topicsList" class="space-y-2">
+                    <div class="text-gray-400">No topics detected</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SERVER_URL = 'http://localhost:3000';
+        let messageHistory = [];
+
+        // Launch ROS2
+        async function launchROS2() {
+            const packageName = document.getElementById('packageName').value;
+            const launchFile = document.getElementById('launchFile').value;
+
+            try {
+                const response = await fetch(`${SERVER_URL}/api/ros2/launch`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ package_name: packageName, launch_file: launchFile })
+                });
+                const data = await response.json();
+                alert(data.message || 'ROS2 launched');
+                refreshStatus();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Stop ROS2
+        async function stopROS2() {
+            try {
+                const response = await fetch(`${SERVER_URL}/api/ros2/stop`, { method: 'POST' });
+                const data = await response.json();
+                alert(data.message);
+                refreshStatus();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Refresh status
+        async function refreshStatus() {
+            await Promise.all([
+                updateStatus(),
+                updateNodes(),
+                updateTopics()
+            ]);
+        }
+
+        // Update connection status
+        async function updateStatus() {
+            try {
+                const response = await fetch(`${SERVER_URL}/api/ros2/status`);
+                const data = await response.json();
+                
+                const statusEl = document.getElementById('ros2Status');
+                if (data.is_running) {
+                    statusEl.textContent = 'Running';
+                    statusEl.className = 'text-2xl font-bold text-green-400';
+                    document.getElementById('connectionStatus').innerHTML = `
+                        <div class="w-3 h-3 rounded-full bg-green-500 pulse"></div>
+                        <span class="text-lg text-green-400">Connected</span>
+                    `;
+                } else {
+                    statusEl.textContent = 'Stopped';
+                    statusEl.className = 'text-2xl font-bold text-red-400';
+                    document.getElementById('connectionStatus').innerHTML = `
+                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                        <span class="text-lg text-red-400">Disconnected</span>
+                    `;
+                }
+                
+                document.getElementById('messageCount').textContent = `${data.message_count} messages`;
+                document.getElementById('messageCountLarge').textContent = data.message_count;
+            } catch (error) {
+                console.error('Status error:', error);
+            }
+        }
+
+        // Fetch latest data
+        async function fetchData() {
+            try {
+                const response = await fetch(`${SERVER_URL}/api/ros2/data`);
+                const data = await response.json();
+                
+                if (data.message) {
+                    document.getElementById('latestNode').textContent = data.node_name || '-';
+                    document.getElementById('latestMessage').textContent = data.message;
+                    document.getElementById('latestTime').textContent = 
+                        new Date(data.timestamp).toLocaleTimeString();
+                    
+                    // Add to log stream
+                    addLogEntry(data);
+                }
+            } catch (error) {
+                console.error('Data fetch error:', error);
+            }
+        }
+
+        // Add log entry
+        function addLogEntry(data) {
+            const logStream = document.getElementById('logStream');
+            
+            // Clear "waiting" message
+            if (logStream.querySelector('.text-gray-400')) {
+                logStream.innerHTML = '';
+            }
+            
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `
+                <span class="text-gray-400">[${new Date(data.timestamp).toLocaleTimeString()}]</span>
+                <span class="text-blue-400">[${data.node_name}]</span>
+                <span class="text-white">${data.message}</span>
+            `;
+            
+            logStream.insertBefore(entry, logStream.firstChild);
+            
+            // Keep only last 50 entries
+            while (logStream.children.length > 50) {
+                logStream.removeChild(logStream.lastChild);
+            }
+        }
+
+        // Clear logs
+        function clearLogs() {
+            document.getElementById('logStream').innerHTML = 
+                '<div class="text-gray-400 text-center py-4">Logs cleared</div>';
+        }
+
+        // Update nodes list
+        async function updateNodes() {
+            try {
+                const response = await fetch(`${SERVER_URL}/api/ros2/nodes`);
+                const data = await response.json();
+                
+                const nodesList = document.getElementById('nodesList');
+                document.getElementById('nodeCount').textContent = data.nodes.length;
+                
+                if (data.nodes.length > 0) {
+                    nodesList.innerHTML = data.nodes.map(node => 
+                        `<div class="bg-white/10 px-3 py-2 rounded-lg text-sm">${node}</div>`
+                    ).join('');
+                } else {
+                    nodesList.innerHTML = '<div class="text-gray-400">No nodes detected</div>';
+                }
+            } catch (error) {
+                console.error('Nodes error:', error);
+            }
+        }
+
+        // Update topics list
+        async function updateTopics() {
+            try {
+                const response = await fetch(`${SERVER_URL}/api/ros2/topics`);
+                const data = await response.json();
+                
+                const topicsList = document.getElementById('topicsList');
+                document.getElementById('topicCount').textContent = data.topics.length;
+                
+                if (data.topics.length > 0) {
+                    topicsList.innerHTML = data.topics.map(topic => 
+                        `<div class="bg-white/10 px-3 py-2 rounded-lg text-sm">${topic}</div>`
+                    ).join('');
+                } else {
+                    topicsList.innerHTML = '<div class="text-gray-400">No topics detected</div>';
+                }
+            } catch (error) {
+                console.error('Topics error:', error);
+            }
+        }
+
+        // Initialize
+        async function init() {
+            await refreshStatus();
+            
+            // Poll for data every 500ms
+            setInterval(fetchData, 500);
+            
+            // Update status every 3 seconds
+            setInterval(updateStatus, 3000);
+            
+            // Update nodes/topics every 5 seconds
+            setInterval(() => {
+                updateNodes();
+                updateTopics();
+            }, 5000);
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
