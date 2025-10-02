@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -69,7 +69,7 @@
             </div>
         </div>
 
-        <!-- Control Panel -->
+        
         <div class="glass-card p-6 mb-6">
             <h2 class="text-2xl font-bold mb-4">Launch Control</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -91,7 +91,7 @@
             </div>
         </div>
 
-        <!-- Stats Cards -->
+      
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div class="glass-card p-6">
                 <h3 class="text-sm font-semibold text-gray-300 mb-2">ROS2 Status</h3>
@@ -111,7 +111,7 @@
             </div>
         </div>
 
-        <!-- Latest Message -->
+      
         <div class="glass-card p-6 mb-6">
             <h2 class="text-2xl font-bold mb-4">Latest Message</h2>
             <div class="bg-black/30 p-4 rounded-lg">
@@ -125,7 +125,7 @@
             </div>
         </div>
 
-        <!-- Real-time Log Stream -->
+      
         <div class="glass-card p-6 mb-6">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-2xl font-bold">Message Stream</h2>
@@ -136,7 +136,7 @@
             </div>
         </div>
 
-        <!-- Active Nodes & Topics -->
+        
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="glass-card p-6">
                 <h2 class="text-2xl font-bold mb-4">Active Nodes</h2>
@@ -157,7 +157,7 @@
         const SERVER_URL = 'http://localhost:3000';
         let messageHistory = [];
 
-        // Launch ROS2
+       
         async function launchROS2() {
             const packageName = document.getElementById('packageName').value;
             const launchFile = document.getElementById('launchFile').value;
@@ -176,7 +176,7 @@
             }
         }
 
-        // Stop ROS2
+       
         async function stopROS2() {
             try {
                 const response = await fetch(`${SERVER_URL}/api/ros2/stop`, { method: 'POST' });
@@ -188,7 +188,7 @@
             }
         }
 
-        // Refresh status
+     
         async function refreshStatus() {
             await Promise.all([
                 updateStatus(),
@@ -197,7 +197,7 @@
             ]);
         }
 
-        // Update connection status
+        
         async function updateStatus() {
             try {
                 const response = await fetch(`${SERVER_URL}/api/ros2/status`);
@@ -227,7 +227,7 @@
             }
         }
 
-        // Fetch latest data
+        
         async function fetchData() {
             try {
                 const response = await fetch(`${SERVER_URL}/api/ros2/data`);
@@ -247,11 +247,11 @@
             }
         }
 
-        // Add log entry
+       
         function addLogEntry(data) {
             const logStream = document.getElementById('logStream');
             
-            // Clear "waiting" message
+            
             if (logStream.querySelector('.text-gray-400')) {
                 logStream.innerHTML = '';
             }
@@ -266,19 +266,19 @@
             
             logStream.insertBefore(entry, logStream.firstChild);
             
-            // Keep only last 50 entries
+            
             while (logStream.children.length > 50) {
                 logStream.removeChild(logStream.lastChild);
             }
         }
 
-        // Clear logs
+        
         function clearLogs() {
             document.getElementById('logStream').innerHTML = 
                 '<div class="text-gray-400 text-center py-4">Logs cleared</div>';
         }
 
-        // Update nodes list
+      
         async function updateNodes() {
             try {
                 const response = await fetch(`${SERVER_URL}/api/ros2/nodes`);
@@ -299,7 +299,7 @@
             }
         }
 
-        // Update topics list
+       
         async function updateTopics() {
             try {
                 const response = await fetch(`${SERVER_URL}/api/ros2/topics`);
@@ -320,21 +320,455 @@
             }
         }
 
-        // Initialize
+        
         async function init() {
             await refreshStatus();
             
-            // Poll for data every 500ms
+           
             setInterval(fetchData, 500);
             
-            // Update status every 3 seconds
+         
             setInterval(updateStatus, 3000);
             
-            // Update nodes/topics every 5 seconds
+            
             setInterval(() => {
                 updateNodes();
                 updateTopics();
             }, 5000);
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html> -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROS2 Node Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+        }
+        .node-card {
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .node-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        .node-card.selected {
+            background: rgba(59, 130, 246, 0.3);
+            border: 2px solid #3b82f6;
+        }
+        .node-card.running {
+            background: rgba(16, 185, 129, 0.3);
+            border: 2px solid #10b981;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            color: white;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+        .btn-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .log-container {
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-7xl mx-auto">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-5xl font-bold text-white mb-4">ROS2 Node Manager</h1>
+            <div class="flex items-center justify-center gap-3">
+                <div id="connectionStatus" class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-gray-500"></div>
+                    <span class="text-lg">Initializing...</span>
+                </div>
+                <span class="text-gray-400">|</span>
+                <span id="runningCount" class="text-gray-400">0 nodes running</span>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="glass-card p-6 mb-6">
+            <h2 class="text-2xl font-bold mb-4">Quick Actions</h2>
+            <div class="flex flex-wrap gap-3">
+                <button onclick="selectAll()" class="btn btn-primary">Select All</button>
+                <button onclick="deselectAll()" class="btn btn-warning">Deselect All</button>
+                <button onclick="runSelected()" class="btn btn-success">Run Selected</button>
+                <button onclick="stopSelected()" class="btn btn-danger">Stop Selected</button>
+                <button onclick="stopAll()" class="btn btn-danger">Stop All Nodes</button>
+                <button onclick="refreshStatus()" class="btn btn-primary">Refresh</button>
+            </div>
+        </div>
+
+        <!-- Available Nodes -->
+        <div class="glass-card p-6 mb-6">
+            <h2 class="text-2xl font-bold mb-4">Available Nodes (Click to Select)</h2>
+            <div id="nodesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Nodes will be populated here -->
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div class="glass-card p-6">
+                <h3 class="text-sm font-semibold text-gray-300 mb-2">Selected</h3>
+                <div class="text-3xl font-bold text-blue-400" id="selectedCount">0</div>
+            </div>
+            <div class="glass-card p-6">
+                <h3 class="text-sm font-semibold text-gray-300 mb-2">Running</h3>
+                <div class="text-3xl font-bold text-green-400" id="runningCountLarge">0</div>
+            </div>
+            <div class="glass-card p-6">
+                <h3 class="text-sm font-semibold text-gray-300 mb-2">Active Topics</h3>
+                <div class="text-3xl font-bold text-purple-400" id="topicCount">0</div>
+            </div>
+            <div class="glass-card p-6">
+                <h3 class="text-sm font-semibold text-gray-300 mb-2">Messages</h3>
+                <div class="text-3xl font-bold text-yellow-400" id="messageCount">0</div>
+            </div>
+        </div>
+
+        <!-- Real-time Log Stream -->
+        <div class="glass-card p-6 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Message Stream</h2>
+                <button onclick="clearLogs()" class="btn btn-danger text-sm py-1">Clear</button>
+            </div>
+            <div id="logStream" class="log-container bg-black/30 rounded-lg p-4">
+                <div class="text-gray-400 text-center py-4">Waiting for messages...</div>
+            </div>
+        </div>
+
+        <!-- Running Nodes Details -->
+        <div class="glass-card p-6">
+            <h2 class="text-2xl font-bold mb-4">Running Nodes Details</h2>
+            <div id="runningNodesList" class="space-y-2">
+                <div class="text-gray-400">No nodes running</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SERVER_URL = 'http://localhost:3000';
+        
+        const availableNodes = [
+            { name: 'publisher_node', package: 'my_robot_controller', description: 'Publisher Node' },
+            { name: 'subscriber_node', package: 'my_robot_controller', description: 'Subscriber Node' },
+            { name: 'service_node', package: 'my_robot_controller', description: 'Service Node' },
+            { name: 'client_node', package: 'my_robot_controller', description: 'Client Node' },
+            { name: 'led_client', package: 'my_robot_controller', description: 'LED Client' },
+            { name: 'led_service', package: 'my_robot_controller', description: 'LED Service' },
+            { name: 'yes_no_service', package: 'my_robot_controller', description: 'Yes/No Service' },
+            { name: 'yes_no_client', package: 'my_robot_controller', description: 'Yes/No Client' }
+        ];
+
+        let selectedNodes = [];
+        let runningNodes = {};
+
+        // Initialize nodes grid
+        function initNodesGrid() {
+            const grid = document.getElementById('nodesGrid');
+            grid.innerHTML = availableNodes.map(node => `
+                <div class="node-card glass-card p-4" onclick="toggleNode('${node.name}')" id="node-${node.name}">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-bold text-lg">${node.description}</h3>
+                        <div class="status-indicator w-3 h-3 rounded-full bg-gray-500" id="status-${node.name}"></div>
+                    </div>
+                    <div class="text-sm text-gray-300">${node.name}</div>
+                    <div class="text-xs text-gray-400 mt-1">${node.package}</div>
+                    <div class="mt-3 flex gap-2">
+                        <button onclick="event.stopPropagation(); runSingleNode('${node.name}')" 
+                                class="btn btn-success text-xs py-1 px-3">Run</button>
+                        <button onclick="event.stopPropagation(); stopSingleNode('${node.name}')" 
+                                class="btn btn-danger text-xs py-1 px-3">Stop</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Toggle node selection
+        function toggleNode(nodeName) {
+            const index = selectedNodes.indexOf(nodeName);
+            if (index > -1) {
+                selectedNodes.splice(index, 1);
+            } else {
+                selectedNodes.push(nodeName);
+            }
+            updateNodeUI();
+        }
+
+        // Select/Deselect all
+        function selectAll() {
+            selectedNodes = availableNodes.map(n => n.name);
+            updateNodeUI();
+        }
+
+        function deselectAll() {
+            selectedNodes = [];
+            updateNodeUI();
+        }
+
+        // Update UI
+        function updateNodeUI() {
+            availableNodes.forEach(node => {
+                const card = document.getElementById(`node-${node.name}`);
+                const isSelected = selectedNodes.includes(node.name);
+                const isRunning = runningNodes[node.name];
+                
+                card.classList.remove('selected', 'running');
+                if (isRunning) {
+                    card.classList.add('running');
+                } else if (isSelected) {
+                    card.classList.add('selected');
+                }
+
+                const statusIndicator = document.getElementById(`status-${node.name}`);
+                if (isRunning) {
+                    statusIndicator.className = 'status-indicator w-3 h-3 rounded-full bg-green-500 pulse';
+                } else {
+                    statusIndicator.className = 'status-indicator w-3 h-3 rounded-full bg-gray-500';
+                }
+            });
+
+            document.getElementById('selectedCount').textContent = selectedNodes.length;
+        }
+
+        // Run single node
+        async function runSingleNode(nodeName) {
+            const node = availableNodes.find(n => n.name === nodeName);
+            if (!node) return;
+
+            try {
+                const response = await fetch(`${SERVER_URL}/api/ros2/run-node`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        package_name: node.package, 
+                        node_name: node.name 
+                    })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    runningNodes[nodeName] = { pid: data.pid, package: node.package };
+                    addLogEntry({ 
+                        message: `Started ${nodeName}`, 
+                        node_name: nodeName,
+                        timestamp: new Date().toISOString() 
+                    });
+                }
+                updateNodeUI();
+                updateStats();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Stop single node
+        async function stopSingleNode(nodeName) {
+            // This is a simplified version - you'd need to track PIDs properly
+            // For now, we'll just update the UI
+            delete runningNodes[nodeName];
+            updateNodeUI();
+            updateStats();
+            addLogEntry({ 
+                message: `Stopped ${nodeName}`, 
+                node_name: nodeName,
+                timestamp: new Date().toISOString() 
+            });
+        }
+
+        // Run selected nodes
+        async function runSelected() {
+            if (selectedNodes.length === 0) {
+                alert('Please select at least one node');
+                return;
+            }
+
+            for (const nodeName of selectedNodes) {
+                await runSingleNode(nodeName);
+                await new Promise(resolve => setTimeout(resolve, 500)); // Delay between launches
+            }
+        }
+
+        // Stop selected nodes
+        async function stopSelected() {
+            if (selectedNodes.length === 0) {
+                alert('Please select at least one node');
+                return;
+            }
+
+            for (const nodeName of selectedNodes) {
+                await stopSingleNode(nodeName);
+            }
+            deselectAll();
+        }
+
+        // Stop all nodes
+        async function stopAll() {
+            try {
+                const response = await fetch(`${SERVER_URL}/api/ros2/stop`, { method: 'POST' });
+                const data = await response.json();
+                runningNodes = {};
+                updateNodeUI();
+                updateStats();
+                addLogEntry({ 
+                    message: 'All nodes stopped', 
+                    node_name: 'system',
+                    timestamp: new Date().toISOString() 
+                });
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Update stats
+        async function updateStats() {
+            try {
+                // Update topics
+                const topicsResponse = await fetch(`${SERVER_URL}/api/ros2/topics`);
+                const topicsData = await topicsResponse.json();
+                document.getElementById('topicCount').textContent = topicsData.topics.length;
+
+                // Update running count
+                const runningCount = Object.keys(runningNodes).length;
+                document.getElementById('runningCountLarge').textContent = runningCount;
+                document.getElementById('runningCount').textContent = `${runningCount} nodes running`;
+
+                // Update connection status
+                if (runningCount > 0) {
+                    document.getElementById('connectionStatus').innerHTML = `
+                        <div class="w-3 h-3 rounded-full bg-green-500 pulse"></div>
+                        <span class="text-lg text-green-400">Active</span>
+                    `;
+                } else {
+                    document.getElementById('connectionStatus').innerHTML = `
+                        <div class="w-3 h-3 rounded-full bg-gray-500"></div>
+                        <span class="text-lg text-gray-400">Idle</span>
+                    `;
+                }
+
+                // Update running nodes list
+                const runningList = document.getElementById('runningNodesList');
+                if (runningCount > 0) {
+                    runningList.innerHTML = Object.entries(runningNodes).map(([name, info]) => `
+                        <div class="bg-white/10 px-4 py-3 rounded-lg flex justify-between items-center">
+                            <div>
+                                <div class="font-semibold">${name}</div>
+                                <div class="text-xs text-gray-400">PID: ${info.pid}</div>
+                            </div>
+                            <button onclick="stopSingleNode('${name}')" class="btn btn-danger text-xs py-1 px-3">Stop</button>
+                        </div>
+                    `).join('');
+                } else {
+                    runningList.innerHTML = '<div class="text-gray-400">No nodes running</div>';
+                }
+            } catch (error) {
+                console.error('Stats error:', error);
+            }
+        }
+
+        // Fetch data
+        async function fetchData() {
+            try {
+                const response = await fetch(`${SERVER_URL}/api/ros2/data`);
+                const data = await response.json();
+                
+                if (data.message) {
+                    addLogEntry(data);
+                    document.getElementById('messageCount').textContent = data.message_count || 0;
+                }
+            } catch (error) {
+                console.error('Data fetch error:', error);
+            }
+        }
+
+        // Add log entry
+        function addLogEntry(data) {
+            const logStream = document.getElementById('logStream');
+            
+            if (logStream.querySelector('.text-gray-400')) {
+                logStream.innerHTML = '';
+            }
+            
+            const entry = document.createElement('div');
+            entry.className = 'border-b border-white/10 pb-2 mb-2';
+            entry.innerHTML = `
+                <span class="text-gray-400">[${new Date(data.timestamp).toLocaleTimeString()}]</span>
+                <span class="text-blue-400">[${data.node_name}]</span>
+                <span class="text-white">${data.message}</span>
+            `;
+            
+            logStream.insertBefore(entry, logStream.firstChild);
+            
+            while (logStream.children.length > 50) {
+                logStream.removeChild(logStream.lastChild);
+            }
+        }
+
+        // Clear logs
+        function clearLogs() {
+            document.getElementById('logStream').innerHTML = 
+                '<div class="text-gray-400 text-center py-4">Logs cleared</div>';
+        }
+
+        // Refresh status
+        async function refreshStatus() {
+            await updateStats();
+        }
+
+        // Initialize
+        function init() {
+            initNodesGrid();
+            updateStats();
+            
+            setInterval(fetchData, 500);
+            setInterval(updateStats, 3000);
         }
 
         window.addEventListener('load', init);
