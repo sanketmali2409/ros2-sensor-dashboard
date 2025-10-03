@@ -1,4 +1,4 @@
-<!-- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -340,10 +340,10 @@
         window.addEventListener('load', init);
     </script>
 </body>
-</html> -->
+</html>
 
 
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -432,7 +432,6 @@
             </div>
         </div>
 
-        <!-- Quick Actions -->
         <div class="glass-card p-6 mb-6">
             <h2 class="text-2xl font-bold mb-4">Quick Actions</h2>
             <div class="flex flex-wrap gap-3">
@@ -445,15 +444,11 @@
             </div>
         </div>
 
-        <!-- Available Nodes -->
         <div class="glass-card p-6 mb-6">
             <h2 class="text-2xl font-bold mb-4">Available Nodes (Click to Select)</h2>
-            <div id="nodesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Nodes will be populated here -->
-            </div>
+            <div id="nodesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </div>
 
-        <!-- Stats -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <div class="glass-card p-6">
                 <h3 class="text-sm font-semibold text-gray-300 mb-2">Selected</h3>
@@ -473,7 +468,6 @@
             </div>
         </div>
 
-        <!-- Real-time Log Stream -->
         <div class="glass-card p-6 mb-6">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-2xl font-bold">Message Stream</h2>
@@ -484,7 +478,6 @@
             </div>
         </div>
 
-        <!-- Running Nodes Details -->
         <div class="glass-card p-6">
             <h2 class="text-2xl font-bold mb-4">Running Nodes Details</h2>
             <div id="runningNodesList" class="space-y-2">
@@ -510,7 +503,6 @@
         let selectedNodes = [];
         let runningNodes = {};
 
-        // Initialize nodes grid
         function initNodesGrid() {
             const grid = document.getElementById('nodesGrid');
             grid.innerHTML = availableNodes.map(node => `
@@ -522,16 +514,15 @@
                     <div class="text-sm text-gray-300">${node.name}</div>
                     <div class="text-xs text-gray-400 mt-1">${node.package}</div>
                     <div class="mt-3 flex gap-2">
-                        <button onclick="event.stopPropagation(); runSingleNode('${node.name}')" 
+                        <button onclick="event.stopPropagation(); runSingleNode('${node.name}')"
                                 class="btn btn-success text-xs py-1 px-3">Run</button>
-                        <button onclick="event.stopPropagation(); stopSingleNode('${node.name}')" 
+                        <button onclick="event.stopPropagation(); stopSingleNode('${node.name}')"
                                 class="btn btn-danger text-xs py-1 px-3">Stop</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        // Toggle node selection
         function toggleNode(nodeName) {
             const index = selectedNodes.indexOf(nodeName);
             if (index > -1) {
@@ -542,7 +533,6 @@
             updateNodeUI();
         }
 
-        // Select/Deselect all
         function selectAll() {
             selectedNodes = availableNodes.map(n => n.name);
             updateNodeUI();
@@ -553,7 +543,6 @@
             updateNodeUI();
         }
 
-        // Update UI
         function updateNodeUI() {
             availableNodes.forEach(node => {
                 const card = document.getElementById(`node-${node.name}`);
@@ -578,7 +567,6 @@
             document.getElementById('selectedCount').textContent = selectedNodes.length;
         }
 
-        // Run single node
         async function runSingleNode(nodeName) {
             const node = availableNodes.find(n => n.name === nodeName);
             if (!node) return;
@@ -587,19 +575,19 @@
                 const response = await fetch(`${SERVER_URL}/api/ros2/run-node`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        package_name: node.package, 
-                        node_name: node.name 
+                    body: JSON.stringify({
+                        package_name: node.package,
+                        node_name: node.name
                     })
                 });
                 const data = await response.json();
                 
                 if (data.success) {
                     runningNodes[nodeName] = { pid: data.pid, package: node.package };
-                    addLogEntry({ 
-                        message: `Started ${nodeName}`, 
+                    addLogEntry({
+                        message: `Started ${nodeName}`,
                         node_name: nodeName,
-                        timestamp: new Date().toISOString() 
+                        timestamp: new Date().toISOString()
                     });
                 }
                 updateNodeUI();
@@ -609,21 +597,17 @@
             }
         }
 
-        // Stop single node
         async function stopSingleNode(nodeName) {
-            // This is a simplified version - you'd need to track PIDs properly
-            // For now, we'll just update the UI
             delete runningNodes[nodeName];
             updateNodeUI();
             updateStats();
-            addLogEntry({ 
-                message: `Stopped ${nodeName}`, 
+            addLogEntry({
+                message: `Stopped ${nodeName}`,
                 node_name: nodeName,
-                timestamp: new Date().toISOString() 
+                timestamp: new Date().toISOString()
             });
         }
 
-        // Run selected nodes
         async function runSelected() {
             if (selectedNodes.length === 0) {
                 alert('Please select at least one node');
@@ -632,11 +616,10 @@
 
             for (const nodeName of selectedNodes) {
                 await runSingleNode(nodeName);
-                await new Promise(resolve => setTimeout(resolve, 500)); // Delay between launches
+                await new Promise(resolve => setTimeout(resolve, 500));
             }
         }
 
-        // Stop selected nodes
         async function stopSelected() {
             if (selectedNodes.length === 0) {
                 alert('Please select at least one node');
@@ -649,7 +632,6 @@
             deselectAll();
         }
 
-        // Stop all nodes
         async function stopAll() {
             try {
                 const response = await fetch(`${SERVER_URL}/api/ros2/stop`, { method: 'POST' });
@@ -657,30 +639,26 @@
                 runningNodes = {};
                 updateNodeUI();
                 updateStats();
-                addLogEntry({ 
-                    message: 'All nodes stopped', 
+                addLogEntry({
+                    message: 'All nodes stopped',
                     node_name: 'system',
-                    timestamp: new Date().toISOString() 
+                    timestamp: new Date().toISOString()
                 });
             } catch (error) {
                 alert('Error: ' + error.message);
             }
         }
 
-        // Update stats
         async function updateStats() {
             try {
-                // Update topics
                 const topicsResponse = await fetch(`${SERVER_URL}/api/ros2/topics`);
                 const topicsData = await topicsResponse.json();
                 document.getElementById('topicCount').textContent = topicsData.topics.length;
 
-                // Update running count
                 const runningCount = Object.keys(runningNodes).length;
                 document.getElementById('runningCountLarge').textContent = runningCount;
                 document.getElementById('runningCount').textContent = `${runningCount} nodes running`;
 
-                // Update connection status
                 if (runningCount > 0) {
                     document.getElementById('connectionStatus').innerHTML = `
                         <div class="w-3 h-3 rounded-full bg-green-500 pulse"></div>
@@ -693,7 +671,6 @@
                     `;
                 }
 
-                // Update running nodes list
                 const runningList = document.getElementById('runningNodesList');
                 if (runningCount > 0) {
                     runningList.innerHTML = Object.entries(runningNodes).map(([name, info]) => `
@@ -713,7 +690,6 @@
             }
         }
 
-        // Fetch data
         async function fetchData() {
             try {
                 const response = await fetch(`${SERVER_URL}/api/ros2/data`);
@@ -728,7 +704,6 @@
             }
         }
 
-        // Add log entry
         function addLogEntry(data) {
             const logStream = document.getElementById('logStream');
             
@@ -751,18 +726,15 @@
             }
         }
 
-        // Clear logs
         function clearLogs() {
-            document.getElementById('logStream').innerHTML = 
+            document.getElementById('logStream').innerHTML =
                 '<div class="text-gray-400 text-center py-4">Logs cleared</div>';
         }
 
-        // Refresh status
         async function refreshStatus() {
             await updateStats();
         }
 
-        // Initialize
         function init() {
             initNodesGrid();
             updateStats();
@@ -774,4 +746,4 @@
         window.addEventListener('load', init);
     </script>
 </body>
-</html>
+</html> -->
