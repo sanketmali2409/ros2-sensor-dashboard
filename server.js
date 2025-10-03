@@ -219,7 +219,7 @@ app.listen(PORT, '0.0.0.0', () => {
 ║  Server: http://localhost:${PORT}                      ║
 ║                                                       ║
 ║  Endpoints:                                           ║
-║  POST /api/ros2/launch        - Launch ROS nodes    ║
+║  POST /api/ros2/launch        - Launch ROS2 nodes    ║
 ║  POST /api/ros2/stop          - Stop ROS2 processes  ║
 ║  POST /api/ros2/run-node      - Run single node      ║
 ║  GET  /api/ros2/data          - Get latest data      ║
